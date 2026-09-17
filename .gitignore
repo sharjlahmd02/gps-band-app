@@ -90,3 +90,7 @@ coverage/
 !**/ios/*/*.xcodeproj
 *.flutter-plugins
 *.flutter-plugin-dependencies
+
+# backend specific
+**/backend/node_modules/
+**/backend/doc
