@@ -1,3 +1,4 @@
+const http = require("http");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -6,6 +7,8 @@ const config = require("./config");
 const { connectDB } = require("./utils/mongo");
 const errorHandler = require("./middleware/errorHandler");
 const logger = require("./config/logger");
+const { setupWebSocket } = require("./utils/websocket");
+const backgroundJobs = require("./services/backgroundJobs");
 
 const app = express();
 
@@ -32,12 +35,21 @@ app.use((req, _res, next) => {
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/bands", require("./routes/band.routes"));
 app.use("/api/bands", require("./routes/profile.routes"));
+app.use("/api/bands", require("./routes/savedLocation.routes"));
+app.use("/api", require("./routes/savedLocation.routes"));
+app.use("/api/bands", require("./routes/activity.routes"));
+app.use("/api/bands", require("./routes/sos.routes"));
+app.use("/api/device", require("./routes/device.routes"));
 
 app.use(errorHandler);
 
+const server = http.createServer(app);
+
 const start = async () => {
   await connectDB();
-  app.listen(config.port, () => {
+  setupWebSocket(server);
+  backgroundJobs.start();
+  server.listen(config.port, () => {
     logger.info(`Server running on port ${config.port} [${config.nodeEnv}]`);
   });
 };
