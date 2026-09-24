@@ -9,6 +9,9 @@ import {
   ShieldCheck, 
   Cpu, 
   AlertTriangle, 
+  FileText,
+  BarChart3,
+  Settings,
   LogOut,
   X
 } from 'lucide-react';
@@ -34,8 +37,11 @@ export default function Sidebar({ isOpen, onClose }) {
     { name: 'Alerts', path: '/alerts', icon: Bell, badge: activeAlertCount },
     { name: 'Safe Zones', path: '/safe-zones', icon: ShieldCheck },
     { name: 'Devices', path: '/devices', icon: Cpu },
-    { name: 'Emergency / SOS', path: '/emergency', icon: AlertTriangle, isEmergency: true }
-    // Police Station removed completely as requested by user
+    { name: 'Emergency / SOS', path: '/emergency', icon: AlertTriangle, isEmergency: true },
+    // Police Station explicitly skipped per requirement
+    { name: 'Reports', path: '/reports', icon: FileText },
+    { name: 'Safety Analytics', path: '/safety-analytics', icon: BarChart3 },
+    { name: 'Settings', path: '/settings', icon: Settings }
   ];
 
   const handleSignOut = () => {
@@ -114,6 +120,7 @@ export default function Sidebar({ isOpen, onClose }) {
               <NavLink
                 key={item.name}
                 to={item.path}
+                end={item.path === '/'}
                 onClick={handleClose}
                 className={({ isActive }) => 
                   `sidebar-nav-item ${isActive ? 'active' : ''} ${item.isEmergency ? 'emergency' : ''}`

@@ -21,7 +21,7 @@
 }
 
 .sidebar-header {
-  padding: 24px 20px 20px;
+  padding: 18px 16px 12px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -60,10 +60,10 @@
 }
 
 .sidebar-nav {
-  padding: 12px 14px;
+  padding: 8px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
   overflow-y: auto;
 }
@@ -73,9 +73,9 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 14px;
+  padding: 7px 12px;
+  border-radius: 9px;
+  font-size: 13.5px;
   font-weight: 500;
   color: var(--text-secondary);
   transition: all 0.15s ease;
@@ -138,11 +138,11 @@
 
 /* User profile footer */
 .sidebar-footer {
-  padding: 16px 14px 20px;
+  padding: 10px 14px 12px;
   border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .sidebar-user {

@@ -1,4 +1,7 @@
 @import './styles/variables.css';
+@import './styles/layout.css';
+@import './styles/dashboard.css';
+@import './styles/pages.css';
 
 @tailwind base;
 @tailwind components;
@@ -17,6 +20,7 @@ body {
   line-height: 1.5;
   min-height: 100vh;
   overflow-x: hidden;
+  margin: 0;
 }
 
 button {
@@ -24,6 +28,7 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
+  background: transparent;
   transition: all 0.15s ease-in-out;
 }
 

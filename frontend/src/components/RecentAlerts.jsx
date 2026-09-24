@@ -92,7 +92,7 @@ export const RecentAlerts = () => {
                   </span>
 
                   {/* Resolved Badge if resolved */}
-                  {alert.status === 'resolved' && (
+                  {alert.isResolved && (
                     <span className="alert-resolved-badge">
                       Resolved
                     </span>

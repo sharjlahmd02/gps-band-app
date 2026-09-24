@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { INITIAL_CHILDREN, INITIAL_ALERTS, INITIAL_SAFE_ZONES, CURRENT_USER } from '../data/mockData';
 
 const AppContext = createContext();
@@ -38,6 +39,9 @@ const playSoundEffect = (type) => {
 };
 
 export const AppProvider = ({ children: appChildren }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [children, setChildren] = useState(INITIAL_CHILDREN);
   const [alerts, setAlerts] = useState(INITIAL_ALERTS);
@@ -48,6 +52,12 @@ export const AppProvider = ({ children: appChildren }) => {
   const [activeModal, setActiveModal] = useState(null);
   const [isDemoPlaying, setIsDemoPlaying] = useState(false);
 
+  // Sync activeTab with current router location
+  useEffect(() => {
+    const path = location.pathname.replace(/^\//, '') || 'dashboard';
+    setActiveTab(path);
+  }, [location.pathname]);
+
   // Add toast notification
   const addToast = (message, type = 'info') => {
     const id = Date.now() + Math.random();
@@ -57,10 +67,12 @@ export const AppProvider = ({ children: appChildren }) => {
     }, 3500);
   };
 
-  // Switch navigation page
+  // Switch navigation page and update URL
   const navigateTo = (tabName) => {
     setActiveTab(tabName);
     setMobileMenuOpen(false);
+    const target = tabName === 'dashboard' ? '/' : `/${tabName}`;
+    navigate(target);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
