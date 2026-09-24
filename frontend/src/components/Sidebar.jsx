@@ -1,4 +1,5 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 import { 
   Shield, 
   LayoutGrid, 
@@ -13,10 +14,8 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
-export const Sidebar = () => {
+export default function Sidebar({ isOpen, onClose }) {
   const { 
-    activeTab, 
-    navigateTo, 
     activeAlertCount, 
     currentUser, 
     mobileMenuOpen, 
@@ -25,22 +24,25 @@ export const Sidebar = () => {
     openModal
   } = useApp();
 
+  const isSidebarOpen = isOpen !== undefined ? isOpen : mobileMenuOpen;
+  const handleClose = onClose || (() => setMobileMenuOpen(false));
+
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
-    { id: 'children', label: 'Children', icon: Smile },
-    { id: 'live-location', label: 'Live Location', icon: MapPin },
-    { id: 'alerts', label: 'Alerts', icon: Bell, badge: activeAlertCount },
-    { id: 'safe-zones', label: 'Safe Zones', icon: ShieldCheck },
-    { id: 'devices', label: 'Devices', icon: Cpu },
-    { id: 'emergency', label: 'Emergency / SOS', icon: AlertTriangle, isEmergency: true }
-    // Police Station is removed per user explicit requirement
+    { name: 'Dashboard', path: '/', icon: LayoutGrid },
+    { name: 'Children', path: '/children', icon: Smile },
+    { name: 'Live Location', path: '/live-location', icon: MapPin },
+    { name: 'Alerts', path: '/alerts', icon: Bell, badge: activeAlertCount },
+    { name: 'Safe Zones', path: '/safe-zones', icon: ShieldCheck },
+    { name: 'Devices', path: '/devices', icon: Cpu },
+    { name: 'Emergency / SOS', path: '/emergency', icon: AlertTriangle, isEmergency: true }
+    // Police Station removed completely as requested by user
   ];
 
   const handleSignOut = () => {
     openModal({
       title: 'Confirm Sign Out',
       body: (
-        <p>Are you sure you want to sign out of <strong>SafeWatch Parent Dashboard</strong>? Active band tracking will continue in the cloud.</p>
+        <p>Are you sure you want to sign out of <strong>SafeWatch Parent Dashboard</strong>? Active band telemetry continues in the cloud.</p>
       ),
       confirmText: 'Sign Out',
       confirmDanger: true,
@@ -67,7 +69,7 @@ export const Sidebar = () => {
               <span style={{ fontSize: '11px', background: '#F1F5F9', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>{currentUser.role}</span>
             </div>
           </div>
-          <p style={{ fontSize: '13px', color: '#475569' }}>Two-Factor Guardian Authentication is <strong>Active</strong>. Emergency SMS notifications linked to primary contact.</p>
+          <p style={{ fontSize: '13px', color: '#475569', margin: 0 }}>Two-Factor Guardian Authentication is <strong>Active</strong>. Emergency SMS notifications linked to primary contact.</p>
         </div>
       ),
       confirmText: 'Close',
@@ -77,11 +79,13 @@ export const Sidebar = () => {
 
   return (
     <>
+      {/* Mobile Backdrop */}
       <div 
-        className={`backdrop ${mobileMenuOpen ? 'open' : ''}`}
-        onClick={() => setMobileMenuOpen(false)}
+        className={`backdrop ${isSidebarOpen ? 'open' : ''}`}
+        onClick={handleClose}
       />
-      <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`}>
+
+      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         {/* SafeWatch Header */}
         <div className="sidebar-header">
           <div className="sidebar-logo-icon">
@@ -91,9 +95,9 @@ export const Sidebar = () => {
             <span className="sidebar-brand-name">SafeWatch</span>
             <span className="sidebar-brand-subtitle">Parent Dashboard</span>
           </div>
-          {mobileMenuOpen && (
+          {isSidebarOpen && (
             <button 
-              onClick={() => setMobileMenuOpen(false)} 
+              onClick={handleClose} 
               style={{ marginLeft: 'auto', padding: '4px', color: '#64748B' }}
               aria-label="Close sidebar"
             >
@@ -102,26 +106,31 @@ export const Sidebar = () => {
           )}
         </div>
 
-        {/* Navigation list */}
+        {/* Navigation list with SPA routing */}
         <nav className="sidebar-nav">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
             return (
-              <button
-                key={item.id}
-                onClick={() => navigateTo(item.id)}
-                className={`sidebar-nav-item ${isActive ? 'active' : ''} ${item.isEmergency ? 'emergency' : ''}`}
-                id={`nav-${item.id}`}
+              <NavLink
+                key={item.name}
+                to={item.path}
+                onClick={handleClose}
+                className={({ isActive }) => 
+                  `sidebar-nav-item ${isActive ? 'active' : ''} ${item.isEmergency ? 'emergency' : ''}`
+                }
               >
-                <div className="sidebar-nav-left">
-                  <Icon size={18} className="sidebar-icon" strokeWidth={isActive ? 2.2 : 1.8} />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge !== undefined && item.badge > 0 && (
-                  <span className="sidebar-badge">{item.badge}</span>
+                {({ isActive }) => (
+                  <>
+                    <div className="sidebar-nav-left">
+                      <Icon size={18} className="sidebar-icon" strokeWidth={isActive ? 2.2 : 1.8} />
+                      <span>{item.name}</span>
+                    </div>
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="sidebar-badge">{item.badge}</span>
+                    )}
+                  </>
                 )}
-              </button>
+              </NavLink>
             );
           })}
         </nav>
@@ -141,6 +150,7 @@ export const Sidebar = () => {
           </div>
 
           <button 
+            type="button"
             className="sidebar-signout-btn" 
             onClick={handleSignOut}
             id="btn-sign-out"
@@ -152,4 +162,5 @@ export const Sidebar = () => {
       </aside>
     </>
   );
-};
+}
+export { Sidebar };

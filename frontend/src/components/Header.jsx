@@ -1,9 +1,11 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
-export const Header = ({ title = 'Dashboard' }) => {
-  const { activeAlertCount, navigateTo, setMobileMenuOpen } = useApp();
+export default function Header({ title = 'Dashboard', onOpenSidebar }) {
+  const { activeAlertCount, setMobileMenuOpen } = useApp();
+  const handleOpen = onOpenSidebar || (() => setMobileMenuOpen(true));
 
   return (
     <>
@@ -11,14 +13,14 @@ export const Header = ({ title = 'Dashboard' }) => {
       <div className="mobile-header">
         <button 
           className="mobile-menu-btn" 
-          onClick={() => setMobileMenuOpen(true)}
+          onClick={handleOpen}
           aria-label="Open menu"
         >
           <Menu size={22} />
         </button>
         <span style={{ fontWeight: 700, fontSize: '16px' }}>SafeWatch</span>
-        <button 
-          onClick={() => navigateTo('alerts')}
+        <Link 
+          to="/alerts"
           style={{ 
             background: '#FEF2F2', 
             color: '#DC2626', 
@@ -29,24 +31,25 @@ export const Header = ({ title = 'Dashboard' }) => {
           }}
         >
           {activeAlertCount} Alerts
-        </button>
+        </Link>
       </div>
 
       {/* Main dashboard title row */}
-      <div className="dashboard-header-row">
+      <div className="dashboard-header-row" style={{ padding: '4px 0 16px' }}>
         <h1 className="dashboard-title">{title}</h1>
         {activeAlertCount > 0 && (
-          <button 
+          <Link 
+            to="/alerts"
             className="header-alert-pill"
-            onClick={() => navigateTo('alerts')}
             id="header-alert-badge"
             title="Click to view all active alerts"
           >
             <span className="alert-dot" />
             <span>{activeAlertCount} Active Alerts</span>
-          </button>
+          </Link>
         )}
       </div>
     </>
   );
-};
+}
+export { Header };

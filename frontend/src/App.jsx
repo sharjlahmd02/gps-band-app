@@ -1,5 +1,6 @@
-import React from 'react';
-import { Sidebar } from './components/Sidebar';
+import React, { useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Sidebar from './components/Sidebar';
 import { DashboardPage } from './pages/DashboardPage';
 import { ChildrenPage } from './pages/ChildrenPage';
 import { LiveLocationPage } from './pages/LiveLocationPage';
@@ -9,52 +10,41 @@ import { DevicesPage } from './pages/DevicesPage';
 import { EmergencySOSPage } from './pages/EmergencySOSPage';
 import { Modal } from './components/Modal';
 import { ToastNotification } from './components/ToastNotification';
-import { useApp } from './context/AppContext';
 import './styles/layout.css';
 import './styles/dashboard.css';
 import './styles/pages.css';
 
-export const App = () => {
-  const { activeTab } = useApp();
-
-  const renderActivePage = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <DashboardPage />;
-      case 'children':
-        return <ChildrenPage />;
-      case 'live-location':
-        return <LiveLocationPage />;
-      case 'alerts':
-        return <AlertsPage />;
-      case 'safe-zones':
-        return <SafeZonesPage />;
-      case 'devices':
-        return <DevicesPage />;
-      case 'emergency':
-        return <EmergencySOSPage />;
-      default:
-        return <DashboardPage />;
-    }
-  };
+export default function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="app-layout">
-      {/* 1. Sidebar matching Figma */}
-      <Sidebar />
+      {/* Sidebar with 1:1 Figma design and SPA navigation (Police Station removed) */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      {/* 2. Main content view */}
+      {/* Main Content Area */}
       <div className="main-wrapper">
         <main className="main-content">
-          {renderActivePage()}
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/children" element={<ChildrenPage />} />
+            <Route path="/live-location" element={<LiveLocationPage />} />
+            <Route path="/alerts" element={<AlertsPage />} />
+            <Route path="/safe-zones" element={<SafeZonesPage />} />
+            <Route path="/devices" element={<DevicesPage />} />
+            <Route path="/emergency" element={<EmergencySOSPage />} />
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </main>
       </div>
 
-      {/* 3. Global Interactive Modals & Toast Feedback */}
+      {/* Global Interactive Modals & Toast Notifications */}
       <Modal />
       <ToastNotification />
     </div>
   );
-};
-
-export default App;
+}

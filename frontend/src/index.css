@@ -1,9 +1,11 @@
 @import './styles/variables.css';
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 *, *::before, *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 body {
@@ -21,7 +23,6 @@ button {
   font-family: inherit;
   cursor: pointer;
   border: none;
-  background: none;
   outline: none;
   transition: all 0.15s ease-in-out;
 }
