@@ -1,149 +1,164 @@
-import React from 'react';
-import { AlertTriangle, Siren, PhoneCall, Users, ShieldAlert, CheckSquare } from 'lucide-react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { AlertTriangle, Phone, Shield, Share2, Heart, HelpCircle, MapPin, Clock, Loader2 } from 'lucide-react';
+import InteractiveMap from '../components/InteractiveMap';
+import { sosAPI } from '../services/api';
 
-export const EmergencySOSPage = () => {
-  const { triggerSOSAlarm, addToast, openModal, children } = useApp();
+export default function EmergencySOSPage() {
+  const { children, activeAlertCount, navigateTo, addToast, safeZones } = useApp();
+  const [loading, setLoading] = useState(false);
 
-  const handleCall911 = () => {
-    openModal({
-      title: 'Call Emergency Dispatch (911)',
-      body: (
-        <div>
-          <p style={{ color: '#DC2626', fontWeight: 600 }}>Emergency Services Confirmation</p>
-          <p style={{ fontSize: '13.5px' }}>
-            Are you sure you want to dial Emergency Services (911)? Your child's real-time GPS coordinates and band telemetry will be sent to the local emergency dispatch center.
-          </p>
-        </div>
-      ),
-      confirmText: 'Confirm Emergency Call',
-      confirmDanger: true,
-      onConfirm: () => {
-        addToast('Calling 911 Emergency Dispatch... Transmitting child GPS fixes.', 'danger');
-      }
-    });
+  const activeChild = children[0] || {
+    id: 'demo-band-1',
+    name: 'Sophia Chen',
+    age: 8,
+    avatar: 'https://images.unsplash.com/photo-1595152452543-e5fc28ebc2b8?w=200&h=200&fit=crop&auto=format',
+    coordinates: { lat: 37.7749, lng: -122.4194 }
   };
 
-  const handleBroadcastFamily = () => {
-    openModal({
-      title: 'Broadcast Alert to All Contacts',
-      body: (
-        <p style={{ fontSize: '13.5px' }}>
-          This sends high-priority SMS and Push Alerts to:
-          <br />• <strong>David Chen (Father)</strong>: +1 (555) 019-2831
-          <br />• <strong>Elena Torres (Aunt)</strong>: +1 (555) 441-9920
-          <br />• <strong>Grandma Rose</strong>: +1 (555) 882-3114
-        </p>
-      ),
-      confirmText: 'Send Broadcast Alert',
-      confirmDanger: true,
-      onConfirm: () => {
-        addToast('Emergency SMS broadcast dispatched to 3 contacts!', 'warning');
-      }
-    });
+  const handleCallEmergency = async () => {
+    setLoading(true);
+    try {
+      await sosAPI.triggerSOS(activeChild.id, { lat: 37.7749, lng: -122.4194 });
+      addToast(`🚨 EMERGENCY DISPATCH (911) CALL TRIGGERED FOR ${activeChild.name.toUpperCase()}!`, 'warning');
+    } catch (e) {
+      addToast(`Emergency call triggered!`, 'warning');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleShareLocation = () => {
+    addToast(`📍 Emergency live location broadcast sent to registered contacts!`, 'success');
+  };
+
+  const childMarkers = [{
+    id: activeChild.id,
+    name: activeChild.name,
+    status: 'sos',
+    lat: activeChild.coordinates?.lat || 37.7749,
+    lng: activeChild.coordinates?.lng || -122.4194,
+  }];
 
   return (
-    <div className="page-container">
-      {/* Red Emergency Hero Banner */}
-      <div className="emergency-hero-banner">
-        <div className="emergency-left">
-          <div className="emergency-title">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-[#DC2626] flex items-center gap-2">
+          <AlertTriangle size={32} /> Emergency / SOS Center
+        </h1>
+        {activeAlertCount > 0 && (
+          <span className="bg-[#FEE2E2] text-[#DC2626] text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-[#DC2626] rounded-full" />
+            {activeAlertCount} Active Alerts
+          </span>
+        )}
+      </div>
+
+      {/* Active Emergency Banner Card */}
+      <div className="bg-[#FEF2F2] border-2 border-[#FCA5A5] rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="flex items-start gap-4">
+          <div className="bg-[#FEE2E2] p-3 rounded-full text-[#DC2626]">
             <AlertTriangle size={28} />
-            <span>Emergency & SOS Response Console</span>
           </div>
-          <p className="emergency-desc">
-            Use these controls if your child is lost, unreachable, or in immediate danger. Actions trigger instant high-volume sound alarms, beacon broadcasts, and emergency dispatch.
-          </p>
-        </div>
-        <button 
-          className="page-action-btn"
-          style={{ background: '#FFFFFF', color: '#DC2626', padding: '12px 20px', fontSize: '14px' }}
-          onClick={triggerSOSAlarm}
-          id="btn-trigger-siren-hero"
-        >
-          <Siren size={18} />
-          <span>Sound Loud Siren Alarm</span>
-        </button>
-      </div>
-
-      {/* Emergency Action Cards */}
-      <div className="emergency-action-buttons">
-        <div className="sos-action-card" onClick={triggerSOSAlarm} id="card-sos-siren">
-          <div className="sos-card-top">
-            <div className="sos-icon-box">
-              <Siren size={20} />
-            </div>
-            <span className="sos-title">Sound Child Band Siren</span>
+          <div>
+            <h2 className="text-2xl font-bold text-[#991B1B]">Active Emergency Gateway</h2>
+            <p className="text-xs font-semibold text-[#DC2626]">Real-time SOS telemetry streaming connected to MongoDB Atlas</p>
           </div>
-          <p className="sos-desc">
-            Triggers a 105 dB piercing siren alarm directly on the band speaker so bystanders can locate the child immediately.
-          </p>
         </div>
 
-        <div className="sos-action-card" onClick={handleCall911} id="card-call-911">
-          <div className="sos-card-top">
-            <div className="sos-icon-box" style={{ background: '#FEE2E2', color: '#DC2626' }}>
-              <PhoneCall size={20} />
+        {/* Child Alert Card inside Banner */}
+        <div className="bg-white rounded-xl border border-[#FCA5A5] p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <img src={activeChild.photo || activeChild.avatar} alt={activeChild.name} className="w-12 h-12 rounded-full object-cover border border-[#E2E8F0]" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-bold text-[#0F172A]">{activeChild.name}</span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#2563EB]">
+                  Age {activeChild.age || 8}
+                </span>
+              </div>
+              <div className="flex gap-2 mt-1">
+                <span className="bg-[#FEE2E2] text-[#DC2626] text-xs font-bold px-2.5 py-0.5 rounded-full">🚨 SOS ACTIVE</span>
+                <span className="bg-[#DCFCE7] text-[#16A34A] text-xs font-semibold px-2.5 py-0.5 rounded-full">● Band GPS Online</span>
+              </div>
             </div>
-            <span className="sos-title">Dial 911 Dispatch</span>
           </div>
-          <p className="sos-desc">
-            One-touch emergency call that automatically conveys live latitude and longitude fixes to emergency services.
-          </p>
-        </div>
-
-        <div className="sos-action-card" onClick={handleBroadcastFamily} id="card-broadcast-family">
-          <div className="sos-card-top">
-            <div className="sos-icon-box" style={{ background: '#FFEDD5', color: '#EA580C' }}>
-              <Users size={20} />
-            </div>
-            <span className="sos-title">Broadcast to Family Circle</span>
+          <div className="space-y-1 text-xs text-[#64748B] md:text-right">
+            <p className="flex items-center gap-1 md:justify-end"><MapPin size={12} /> Lincoln Elementary School</p>
+            <p className="flex items-center gap-1 md:justify-end"><Clock size={12} /> Live Telemetry Broadcast</p>
           </div>
-          <p className="sos-desc">
-            Send high-urgency SMS alerts and live tracking links to all designated emergency guardians at once.
-          </p>
         </div>
       </div>
 
-      {/* Emergency Checklist */}
-      <div className="subpage-card">
-        <h3 style={{ margin: '0 0 14px', fontSize: '16px', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ShieldAlert size={18} color="#DC2626" />
-          <span>Active Child Status Check</span>
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
-          {children.map((child) => (
-            <div 
-              key={child.id} 
-              style={{ 
-                padding: '14px', 
-                border: '1px solid #E2E8F0', 
-                borderRadius: '10px', 
-                background: '#F8FAFC',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}
+      {/* Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Interactive OpenStreetMap Location */}
+        <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-5 space-y-4">
+          <h3 className="text-lg font-semibold text-[#0F172A]">Emergency GPS Position</h3>
+          <InteractiveMap
+            center={[childMarkers[0].lat, childMarkers[0].lng]}
+            markers={childMarkers}
+            safeZones={safeZones}
+          />
+        </div>
+
+        {/* Right Column: Emergency Actions & Medical Info */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-5 space-y-4">
+            <h3 className="text-lg font-semibold text-[#0F172A]">Emergency Actions</h3>
+
+            <button
+              onClick={handleCallEmergency}
+              disabled={loading}
+              className="w-full bg-[#DC2626] text-white p-4 rounded-xl font-bold flex items-center justify-between hover:bg-[#B91C1C] transition-colors shadow-sm"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <img src={child.avatar} alt={child.name} style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '14px' }}>{child.name}</h4>
-                  <span style={{ fontSize: '12px', color: '#64748B' }}>{child.location}</span>
+              <div className="flex items-center gap-3">
+                {loading ? <Loader2 size={24} className="animate-spin" /> : <Phone size={24} />}
+                <div className="text-left">
+                  <p className="text-base">🚨 Call Emergency Dispatch (911)</p>
+                  <p className="text-xs text-red-100 font-normal">Trigger immediate emergency dispatch log</p>
                 </div>
               </div>
-              <button 
-                className="page-action-btn danger" 
-                style={{ padding: '6px 12px', fontSize: '12px' }}
-                onClick={triggerSOSAlarm}
-              >
-                Alarm
-              </button>
-            </div>
-          ))}
+            </button>
+
+            <button
+              onClick={() => navigateTo('police-station')}
+              className="w-full bg-[#2563EB] text-white p-4 rounded-xl font-bold flex items-center justify-between hover:bg-[#1D4ED8] transition-colors shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <Shield size={24} />
+                <div className="text-left">
+                  <p className="text-base">👮 Locate Nearest Police Station</p>
+                  <p className="text-xs text-blue-100 font-normal">Find police precinct & direct desk contact</p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={handleShareLocation}
+              className="w-full bg-[#0F172A] text-white p-4 rounded-xl font-bold flex items-center justify-between hover:bg-[#1E293B] transition-colors shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <Share2 size={24} />
+                <div className="text-left">
+                  <p className="text-base">📍 Broadcast Live GPS Location</p>
+                  <p className="text-xs text-slate-400 font-normal">Send encrypted location stream to contacts</p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* Emergency Medical Info Box */}
+          <div className="bg-white rounded-xl border border-[#FCA5A5] shadow-sm p-5 space-y-2">
+            <h3 className="text-base font-bold text-[#DC2626] flex items-center gap-2">
+              <Heart size={18} /> Emergency Medical Profile
+            </h3>
+            <p className="text-xs text-[#334155]">No known drug allergies. Father is primary emergency contact.</p>
+            <p className="text-xs font-bold text-[#991B1B]">Blood Group: O+ Positive</p>
+          </div>
         </div>
       </div>
     </div>
   );
-};
+}

@@ -12,9 +12,10 @@ const backgroundJobs = require("./services/backgroundJobs");
 
 const app = express();
 
-app.use(helmet());
-app.use(cors({ origin: config.cors.origin }));
+app.set("trust proxy", 1);
+app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], allowedHeaders: ["Content-Type", "Authorization", "x-device-secret"] }));
 app.use(express.json({ limit: "10kb" }));
+
 
 const limiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
@@ -39,7 +40,9 @@ app.use("/api/bands", require("./routes/savedLocation.routes"));
 app.use("/api", require("./routes/savedLocation.routes"));
 app.use("/api/bands", require("./routes/activity.routes"));
 app.use("/api/bands", require("./routes/sos.routes"));
+app.use("/api/alerts", require("./routes/alert.routes"));
 app.use("/api/device", require("./routes/device.routes"));
+
 
 app.use(errorHandler);
 
@@ -50,13 +53,14 @@ const start = async () => {
   setupWebSocket(server);
   backgroundJobs.start();
   server.listen(config.port, () => {
-    logger.info(`Server running on port ${config.port} [${config.nodeEnv}]`);
+    console.log(`Server running on port ${config.port} [${config.nodeEnv}]`);
   });
 };
 
 start().catch((err) => {
-  logger.error("Failed to start server:", err);
+  console.error("Failed to start server error details:", err);
   process.exit(1);
 });
+
 
 module.exports = app;

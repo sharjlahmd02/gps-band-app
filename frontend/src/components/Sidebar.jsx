@@ -1,173 +1,122 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { 
-  Shield, 
-  LayoutGrid, 
-  Smile, 
-  MapPin, 
-  Bell, 
-  ShieldCheck, 
-  Cpu, 
-  AlertTriangle, 
-  FileText,
-  BarChart3,
-  Settings,
-  LogOut,
-  X
-} from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import {
+  Shield, LayoutDashboard, Users, MapPin, Bell, Watch,
+  AlertTriangle, Building2, FileText, BarChart3, Settings,
+  X, LogOut
+} from 'lucide-react';
 
-export default function Sidebar({ isOpen, onClose }) {
-  const { 
-    activeAlertCount, 
-    currentUser, 
-    mobileMenuOpen, 
-    setMobileMenuOpen, 
-    addToast,
-    openModal
-  } = useApp();
+const NAV_ITEMS = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, route: '/' },
+  { id: 'children', label: 'Children', icon: Users, route: '/children' },
+  { id: 'live-location', label: 'Live Location', icon: MapPin, route: '/live-location' },
+  { id: 'alerts', label: 'Alerts', icon: Bell, route: '/alerts', showBadge: true },
+  { id: 'safe-zones', label: 'Safe Zones', icon: Shield, route: '/safe-zones' },
+  { id: 'devices', label: 'Devices', icon: Watch, route: '/devices' },
+  { id: 'emergency', label: 'Emergency / SOS', icon: AlertTriangle, route: '/emergency' },
+  { id: 'police-station', label: 'Police Station', icon: Building2, route: '/police-station' },
+  { id: 'reports', label: 'Reports', icon: FileText, route: '/reports' },
+  { id: 'safety-analytics', label: 'Safety Analytics', icon: BarChart3, route: '/safety-analytics' },
+  { id: 'settings', label: 'Settings', icon: Settings, route: '/settings' },
+];
 
-  const isSidebarOpen = isOpen !== undefined ? isOpen : mobileMenuOpen;
-  const handleClose = onClose || (() => setMobileMenuOpen(false));
-
-  const navItems = [
-    { name: 'Dashboard', path: '/', icon: LayoutGrid },
-    { name: 'Children', path: '/children', icon: Smile },
-    { name: 'Live Location', path: '/live-location', icon: MapPin },
-    { name: 'Alerts', path: '/alerts', icon: Bell, badge: activeAlertCount },
-    { name: 'Safe Zones', path: '/safe-zones', icon: ShieldCheck },
-    { name: 'Devices', path: '/devices', icon: Cpu },
-    { name: 'Emergency / SOS', path: '/emergency', icon: AlertTriangle, isEmergency: true },
-    // Police Station explicitly skipped per requirement
-    { name: 'Reports', path: '/reports', icon: FileText },
-    { name: 'Safety Analytics', path: '/safety-analytics', icon: BarChart3 },
-    { name: 'Settings', path: '/settings', icon: Settings }
-  ];
-
-  const handleSignOut = () => {
-    openModal({
-      title: 'Confirm Sign Out',
-      body: (
-        <p>Are you sure you want to sign out of <strong>SafeWatch Parent Dashboard</strong>? Active band telemetry continues in the cloud.</p>
-      ),
-      confirmText: 'Sign Out',
-      confirmDanger: true,
-      onConfirm: () => {
-        addToast('Signed out successfully (Demo session reset)', 'info');
-      }
-    });
-  };
-
-  const handleProfileClick = () => {
-    openModal({
-      title: 'Parent Profile Settings',
-      body: (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <img 
-              src={currentUser.avatar} 
-              alt={currentUser.name} 
-              style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover' }} 
-            />
-            <div>
-              <h4 style={{ margin: 0, fontSize: '16px', color: '#0F172A' }}>{currentUser.name}</h4>
-              <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>{currentUser.email}</p>
-              <span style={{ fontSize: '11px', background: '#F1F5F9', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>{currentUser.role}</span>
-            </div>
-          </div>
-          <p style={{ fontSize: '13px', color: '#475569', margin: 0 }}>Two-Factor Guardian Authentication is <strong>Active</strong>. Emergency SMS notifications linked to primary contact.</p>
-        </div>
-      ),
-      confirmText: 'Close',
-      onConfirm: () => {}
-    });
-  };
+export default function Sidebar() {
+  const { activeTab, navigateTo, activeAlertCount, currentUser, mobileMenuOpen, setMobileMenuOpen, logout } = useApp();
 
   return (
     <>
-      {/* Mobile Backdrop */}
-      <div 
-        className={`backdrop ${isSidebarOpen ? 'open' : ''}`}
-        onClick={handleClose}
-      />
+      {/* Mobile Drawer Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
 
-      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        {/* SafeWatch Header */}
-        <div className="sidebar-header">
-          <div className="sidebar-logo-icon">
-            <Shield size={20} strokeWidth={2.2} />
+      {/* Sidebar Component */}
+      <aside className={`
+        fixed top-0 left-0 h-screen w-60 bg-white border-r border-[#E2E8F0]
+        flex flex-col z-50 transition-transform duration-300 ease-in-out
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Brand Header */}
+        <div className="p-4 border-b border-[#F1F5F9] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#0F172A] p-2 rounded-xl shadow-sm">
+              <Shield size={20} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-[#0F172A] tracking-tight leading-tight">SafeWatch</h1>
+              <p className="text-xs text-[#64748B]">Child Safety System</p>
+            </div>
           </div>
-          <div className="sidebar-brand-text">
-            <span className="sidebar-brand-name">SafeWatch</span>
-            <span className="sidebar-brand-subtitle">Parent Dashboard</span>
-          </div>
-          {isSidebarOpen && (
-            <button 
-              onClick={handleClose} 
-              style={{ marginLeft: 'auto', padding: '4px', color: '#64748B' }}
-              aria-label="Close sidebar"
-            >
-              <X size={20} />
-            </button>
-          )}
+
+          {/* Close button for mobile */}
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="lg:hidden p-1.5 rounded-lg text-[#64748B] hover:bg-[#F1F5F9]"
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        {/* Navigation list with SPA routing */}
-        <nav className="sidebar-nav">
-          {navItems.map((item) => {
+        {/* Navigation Items */}
+        <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
+          {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
+            const isActive = activeTab === item.id || (item.id === 'dashboard' && activeTab === 'dashboard');
+            const isEmergency = item.id === 'emergency';
+
             return (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                end={item.path === '/'}
-                onClick={handleClose}
-                className={({ isActive }) => 
-                  `sidebar-nav-item ${isActive ? 'active' : ''} ${item.isEmergency ? 'emergency' : ''}`
-                }
+              <button
+                key={item.id}
+                onClick={() => navigateTo(item.id)}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  isActive
+                    ? isEmergency
+                      ? 'bg-[#DC2626] text-white shadow-sm font-semibold'
+                      : 'bg-[#0F172A] text-white shadow-sm font-semibold'
+                    : isEmergency
+                      ? 'text-[#DC2626] hover:bg-[#FEF2F2]'
+                      : 'text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
+                }`}
               >
-                {({ isActive }) => (
-                  <>
-                    <div className="sidebar-nav-left">
-                      <Icon size={18} className="sidebar-icon" strokeWidth={isActive ? 2.2 : 1.8} />
-                      <span>{item.name}</span>
-                    </div>
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <span className="sidebar-badge">{item.badge}</span>
-                    )}
-                  </>
+                <Icon size={18} className={isActive ? 'text-white' : isEmergency ? 'text-[#DC2626]' : 'text-[#64748B]'} />
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.showBadge && activeAlertCount > 0 && (
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                    isActive ? 'bg-white text-[#DC2626]' : 'bg-[#FEE2E2] text-[#DC2626]'
+                  }`}>
+                    {activeAlertCount}
+                  </span>
                 )}
-              </NavLink>
+              </button>
             );
           })}
         </nav>
 
-        {/* User Profile Footer */}
-        <div className="sidebar-footer">
-          <div className="sidebar-user" onClick={handleProfileClick} title="View Account Settings">
-            <img 
-              src={currentUser.avatar} 
-              alt={currentUser.name} 
-              className="sidebar-user-avatar"
-            />
-            <div className="sidebar-user-info">
-              <span className="sidebar-user-name">{currentUser.name}</span>
-              <span className="sidebar-user-email">{currentUser.email}</span>
-            </div>
-          </div>
-
-          <button 
-            type="button"
-            className="sidebar-signout-btn" 
-            onClick={handleSignOut}
-            id="btn-sign-out"
+        {/* User Profile & Logout Footer */}
+        <div className="border-t border-[#E2E8F0] p-3.5 flex items-center justify-between gap-2">
+          <button
+            onClick={() => navigateTo('settings')}
+            className="flex-1 flex items-center gap-2.5 hover:bg-[#F8FAFC] rounded-xl p-1.5 transition-colors text-left min-w-0"
           >
-            <LogOut size={16} />
-            <span>Sign Out</span>
+            <img src={currentUser.avatar} alt={currentUser.name} className="w-8 h-8 rounded-full object-cover border border-[#E2E8F0] flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-[#0F172A] truncate leading-tight">{currentUser.name}</p>
+              <p className="text-[10px] text-[#64748B] truncate">{currentUser.email || 'Parent Account'}</p>
+            </div>
+          </button>
+          <button
+            onClick={logout}
+            title="Sign Out"
+            className="p-2 text-[#64748B] hover:text-[#DC2626] hover:bg-[#FEF2F2] rounded-lg transition-colors flex-shrink-0"
+          >
+            <LogOut size={18} />
           </button>
         </div>
       </aside>
     </>
   );
 }
-export { Sidebar };

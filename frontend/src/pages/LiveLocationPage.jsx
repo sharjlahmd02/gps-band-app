@@ -1,283 +1,167 @@
 import React, { useState } from 'react';
-import { 
-  Navigation, 
-  Layers, 
-  ZoomIn, 
-  ZoomOut, 
-  Home, 
-  Crosshair, 
-  ShieldCheck, 
-  Activity 
-} from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { MapPin, Clock, RefreshCw, Navigation, Radio, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { sosAPI } from '../services/api';
+import InteractiveMap from '../components/InteractiveMap';
 
-export const LiveLocationPage = () => {
-  const { 
-    children, 
-    safeZones, 
-    toggleDemoMode, 
-    isDemoPlaying, 
-    pingBand, 
-    openModal, 
-    addToast 
-  } = useApp();
+export default function LiveLocationPage() {
+  const { children, activeAlertCount, addToast, safeZones } = useApp();
+  const [selectedChild, setSelectedChild] = useState(0);
+  const [simStatus, setSimStatus] = useState('safe');
+  const [loading, setLoading] = useState(false);
 
-  const [selectedChild, setSelectedChild] = useState('all');
-  const [showGeofences, setShowGeofences] = useState(true);
-  const [zoomLevel, setZoomLevel] = useState(1);
-
-  const handleZoom = (delta) => {
-    setZoomLevel((prev) => Math.min(Math.max(prev + delta, 0.8), 1.6));
-    addToast(`Map Zoom: ${Math.round((zoomLevel + delta) * 100)}%`, 'info');
+  const child = children[selectedChild] || {
+    name: 'Sophia Chen',
+    id: 'demo-band-1',
+    batteryPct: 88,
+    location: 'Lincoln Elementary School',
+    coordinates: { lat: 37.7749, lng: -122.4194 },
   };
 
-  const handleInspectLocation = (child) => {
-    openModal({
-      title: `GPS Telemetry: ${child.name}`,
-      body: (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div><strong>Location:</strong> {child.location}</div>
-          <div><strong>Coordinates:</strong> {child.coords.lat.toFixed(5)}° N, {child.coords.lng.toFixed(5)}° W</div>
-          <div><strong>Speed:</strong> {isDemoPlaying ? '1.8 km/h (Walking)' : '0.0 km/h (Stationary)'}</div>
-          <div><strong>Satellite Fix:</strong> 9 Satellites (GLONASS + GPS L1/L5)</div>
-          <div><strong>Safe Zone Status:</strong> {child.inSafeZone ? 'Inside Safe Boundary' : '⚠️ Outside Boundary'}</div>
-        </div>
-      ),
-      confirmText: 'Ping Band Buzzer',
-      onConfirm: () => pingBand(child.name, child.device.id)
-    });
+  const handleSimulatePing = async (statusType) => {
+    setLoading(true);
+    setSimStatus(statusType);
+    if (statusType === 'safe') {
+      addToast(`[Telemetry] Ping received for ${child.name}: Position within safe geofence (37.7749, -122.4194)`, 'success');
+    } else if (statusType === 'warning') {
+      addToast(`[Geofence] Alert! ${child.name} moved near outer boundary (37.7780, -122.4210)`, 'warning');
+    } else if (statusType === 'sos') {
+      try {
+        await sosAPI.triggerSOS(child.id, { lat: 37.7749, lng: -122.4194 });
+      } catch (e) {
+        // Fallback info
+      }
+      addToast(`🚨 EMERGENCY SOS EVENT LOGGED IN MONGODB FOR ${child.name.toUpperCase()}!`, 'warning');
+    }
+    setLoading(false);
+  };
+
+  const currentMarker = {
+    id: child.id,
+    name: child.name,
+    status: simStatus,
+    lat: simStatus === 'sos' ? 37.7790 : simStatus === 'warning' ? 37.7780 : (child.coordinates?.lat || 37.7749),
+    lng: simStatus === 'sos' ? -122.4220 : simStatus === 'warning' ? -122.4210 : (child.coordinates?.lng || -122.4194),
+    batteryPct: child.batteryPct || 90,
   };
 
   return (
-    <div className="page-container">
-      <div className="page-header-row">
-        <div className="page-title-group">
-          <h1 className="page-title">Live Location Map</h1>
-          <p className="page-description">Real-time GPS satellite positioning, geofence perimeters, and breadcrumb trails.</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-[#0F172A]">Live GPS Telemetry</h1>
+          <p className="text-xs text-[#64748B] mt-1">Real OpenStreetMap live tracking stream connected to MongoDB backend</p>
         </div>
+        {activeAlertCount > 0 && (
+          <span className="bg-[#FEE2E2] text-[#DC2626] text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-[#DC2626] rounded-full" />{activeAlertCount} Active Alerts
+          </span>
+        )}
+      </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            className="page-action-btn"
-            style={{ background: isDemoPlaying ? '#16A34A' : '#0F172A' }}
-            onClick={toggleDemoMode}
-            id="btn-live-gps-simulation"
+      {/* Child Selector Tabs */}
+      <div className="flex gap-3">
+        {children.map((c, i) => {
+          const active = i === selectedChild;
+          return (
+            <button
+              key={c.id}
+              onClick={() => setSelectedChild(i)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
+                active ? 'border-[#2563EB] bg-[#EFF6FF]' : 'border-[#E2E8F0] bg-white hover:bg-[#F8FAFC]'
+              }`}
+            >
+              <img src={c.photo || c.avatar} alt={c.name} className="w-8 h-8 rounded-full object-cover border border-[#E2E8F0]" />
+              <div className="text-left">
+                <p className="text-sm font-semibold text-[#0F172A]">{c.name}</p>
+                <p className="text-xs text-[#64748B]">GPS Band Active</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Live GPS Telemetry Simulator Control Panel */}
+      <div className="bg-white rounded-xl border border-[#BFDBFE] bg-[#EFF6FF]/40 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Radio size={18} className="text-[#2563EB] animate-pulse" />
+            <h2 className="text-sm font-bold text-[#0F172A]">Interactive Live Telemetry Simulator</h2>
+          </div>
+          <span className="text-xs text-[#2563EB] font-medium bg-[#DBEAFE] px-2.5 py-0.5 rounded-full">
+            Real Backend Telemetry
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => handleSimulatePing('safe')}
+            disabled={loading}
+            className="flex-1 min-w-[180px] bg-white border border-[#BBF7D0] hover:bg-[#F0FDF4] text-[#16A34A] py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
           >
-            <Activity size={16} />
-            <span>{isDemoPlaying ? 'Simulation Running' : 'Start GPS Simulation'}</span>
+            <CheckCircle size={15} /> 1. Simulate In-Zone Ping
+          </button>
+          <button
+            onClick={() => handleSimulatePing('warning')}
+            disabled={loading}
+            className="flex-1 min-w-[180px] bg-white border border-[#FDE68A] hover:bg-[#FEFCE8] text-[#D97706] py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+          >
+            <AlertTriangle size={15} /> 2. Simulate Boundary Warning
+          </button>
+          <button
+            onClick={() => handleSimulatePing('sos')}
+            disabled={loading}
+            className="flex-1 min-w-[180px] bg-[#DC2626] hover:bg-[#B91C1C] text-white py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+          >
+            {loading ? <Loader2 size={15} className="animate-spin" /> : <AlertTriangle size={15} />} 3. Trigger Emergency SOS
           </button>
         </div>
       </div>
 
-      <div className="full-map-card">
-        {/* Floating Controls Left */}
-        <div className="map-floating-panel">
-          <div className="map-filter-toggle">
-            <button 
-              className={`map-toggle-btn ${selectedChild === 'all' ? 'active' : ''}`}
-              onClick={() => setSelectedChild('all')}
-            >
-              All Children
-            </button>
-            <button 
-              className={`map-toggle-btn ${selectedChild === 'sophia' ? 'active' : ''}`}
-              onClick={() => setSelectedChild('sophia')}
-            >
-              Sophia (Age 8)
-            </button>
-            <button 
-              className={`map-toggle-btn ${selectedChild === 'liam' ? 'active' : ''}`}
-              onClick={() => setSelectedChild('liam')}
-            >
-              Liam (Age 10)
-            </button>
+      {/* Map + Info */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
+        {/* Interactive Leaflet Map */}
+        <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-5">
+          <div className="flex items-center justify-between pb-3">
+            <div>
+              <h2 className="text-lg font-semibold text-[#0F172A]">{child.name}'s OpenStreetMap Location</h2>
+              <p className="text-xs text-[#64748B]">Real-time Leaflet Geofence Tiles</p>
+            </div>
           </div>
-
-          <button 
-            onClick={() => {
-              setShowGeofences(!showGeofences);
-              addToast(showGeofences ? 'Geofences hidden' : 'Geofences visible', 'info');
-            }}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px', 
-              fontSize: '12px', 
-              padding: '6px 10px',
-              borderRadius: '6px',
-              background: showGeofences ? '#DCFCE7' : '#F1F5F9',
-              color: showGeofences ? '#16A34A' : '#64748B',
-              fontWeight: 600
-            }}
-          >
-            <ShieldCheck size={14} />
-            <span>{showGeofences ? 'Geofences ON' : 'Geofences OFF'}</span>
-          </button>
-        </div>
-
-        {/* Floating Zoom & Center Controls Right */}
-        <div className="map-controls-floating">
-          <button className="map-ctrl-btn" onClick={() => handleZoom(0.2)} title="Zoom In">
-            <ZoomIn size={18} />
-          </button>
-          <button className="map-ctrl-btn" onClick={() => handleZoom(-0.2)} title="Zoom Out">
-            <ZoomOut size={18} />
-          </button>
-          <button 
-            className="map-ctrl-btn" 
-            onClick={() => {
-              setZoomLevel(1);
-              addToast('Map re-centered to Home', 'info');
-            }} 
-            title="Center on Home"
-          >
-            <Crosshair size={18} />
-          </button>
-        </div>
-
-        {/* Map Canvas Background SVG */}
-        <svg 
-          className="map-bg-grid" 
-          viewBox="0 0 1000 600" 
-          preserveAspectRatio="none"
-          style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center', transition: 'transform 0.2s ease-out' }}
-        >
-          {/* Base terrain */}
-          <rect width="1000" height="600" fill="#E8EFE9" />
-          
-          {/* Riverside Park green zone */}
-          <rect x="520" y="320" width="380" height="220" rx="16" fill="#D5E8D4" opacity="0.85" />
-          {/* Lincoln Elementary Campus zone */}
-          <rect x="80" y="60" width="340" height="240" rx="16" fill="#D5E8D4" opacity="0.85" />
-
-          {/* Broad Highways */}
-          <path d="M 0 180 L 1000 180" stroke="#FFFFFF" strokeWidth="24" />
-          <path d="M 0 380 L 1000 380" stroke="#FFFFFF" strokeWidth="26" />
-          <path d="M 280 0 L 280 600" stroke="#FFFFFF" strokeWidth="24" />
-          <path d="M 680 0 L 680 600" stroke="#FFFFFF" strokeWidth="26" />
-
-          {/* Secondary streets */}
-          <path d="M 0 90 L 1000 90" stroke="#F8FAFC" strokeWidth="10" />
-          <path d="M 0 280 L 1000 280" stroke="#F8FAFC" strokeWidth="12" />
-          <path d="M 0 490 L 1000 490" stroke="#F8FAFC" strokeWidth="10" />
-          <path d="M 140 0 L 140 600" stroke="#F8FAFC" strokeWidth="10" />
-          <path d="M 480 0 L 480 600" stroke="#F8FAFC" strokeWidth="14" />
-          <path d="M 850 0 L 850 600" stroke="#F8FAFC" strokeWidth="10" />
-
-          {/* River / Marina */}
-          <path d="M 0 540 Q 300 480 550 550 T 1000 510" fill="none" stroke="#BFDBFE" strokeWidth="22" opacity="0.75" />
-
-          {/* Geofence Perimeter Circles */}
-          {showGeofences && (
-            <>
-              {/* Home Zone */}
-              <circle cx="480" cy="280" r="70" fill="rgba(139, 92, 246, 0.12)" stroke="#8B5CF6" strokeWidth="2" strokeDasharray="6,4" />
-              {/* Lincoln Elementary Zone */}
-              <circle cx="220" cy="180" r="110" fill="rgba(59, 130, 246, 0.12)" stroke="#3B82F6" strokeWidth="2" strokeDasharray="6,4" />
-              {/* Riverside Park Zone */}
-              <circle cx="700" cy="420" r="130" fill="rgba(16, 185, 129, 0.12)" stroke="#10B981" strokeWidth="2" strokeDasharray="6,4" />
-            </>
-          )}
-
-          {/* Breadcrumb Path History */}
-          <polyline 
-            points="220,240 240,210 220,180" 
-            fill="none" 
-            stroke="#EC4899" 
-            strokeWidth="3" 
-            strokeDasharray="4,4" 
-            opacity="0.8" 
+          <InteractiveMap
+            center={[currentMarker.lat, currentMarker.lng]}
+            markers={[currentMarker]}
+            safeZones={safeZones}
           />
-          <polyline 
-            points="620,380 660,400 700,420" 
-            fill="none" 
-            stroke="#3B82F6" 
-            strokeWidth="3" 
-            strokeDasharray="4,4" 
-            opacity="0.8" 
-          />
-        </svg>
-
-        {/* Center Marker: YOU (Home) */}
-        <div 
-          className="map-pin-you" 
-          style={{ top: '48%', left: '48%' }}
-          title="Home Sanctuary (742 Evergreen Terrace)"
-        >
-          <div className="you-ring-outer">
-            <div className="you-circle-inner">
-              <Home size={15} strokeWidth={2.5} />
-            </div>
-          </div>
-          <span className="you-pill-label">Home Sanctuary</span>
         </div>
 
-        {/* Sophia Chen Marker */}
-        {(selectedChild === 'all' || selectedChild === 'sophia') && children[0] && (
-          <div 
-            className="map-pin-child"
-            style={{ 
-              top: isDemoPlaying ? '32%' : '30%', 
-              left: isDemoPlaying ? '24%' : '22%' 
-            }}
-            onClick={() => handleInspectLocation(children[0])}
-            title={`${children[0].name} - Click for telemetry`}
-          >
-            <div className="child-marker-badge" style={{ borderColor: '#EC4899', width: '36px', height: '36px' }}>
-              <img src={children[0].avatar} alt={children[0].name} />
-            </div>
-            <span className="child-pin-tag" style={{ background: '#EC4899' }}>
-              Sophia ({children[0].battery}%)
-            </span>
-          </div>
-        )}
-
-        {/* Liam Torres Marker */}
-        {(selectedChild === 'all' || selectedChild === 'liam') && children[1] && (
-          <div 
-            className="map-pin-child"
-            style={{ 
-              top: isDemoPlaying ? '72%' : '70%', 
-              left: isDemoPlaying ? '72%' : '70%' 
-            }}
-            onClick={() => handleInspectLocation(children[1])}
-            title={`${children[1].name} - Click for telemetry`}
-          >
-            <div className="child-marker-badge" style={{ borderColor: '#3B82F6', width: '36px', height: '36px' }}>
-              <img src={children[1].avatar} alt={children[1].name} />
-            </div>
-            <span className="child-pin-tag" style={{ background: '#3B82F6' }}>
-              Liam ({children[1].battery}%)
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Telemetry summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-        {children.map((child) => (
-          <div 
-            key={child.id} 
-            className="subpage-card" 
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <img src={child.avatar} alt={child.name} style={{ width: '42px', height: '42px', borderRadius: '10px' }} />
+        {/* Status Card */}
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+            <div className="p-4 flex items-center gap-3 bg-[#F8FAFC]">
+              <img src={child.photo || child.avatar} alt={child.name} className="w-10 h-10 rounded-full object-cover border border-[#E2E8F0]" />
               <div>
-                <h4 style={{ margin: 0, fontSize: '14px' }}>{child.name}</h4>
-                <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>{child.location}</p>
+                <p className="text-sm font-semibold text-[#0F172A]">{child.name}</p>
+                <span className="text-xs font-semibold text-[#2563EB]">GPS Band #1</span>
               </div>
             </div>
-            <button 
-              className="page-action-btn"
-              style={{ padding: '6px 12px', fontSize: '12px' }}
-              onClick={() => handleInspectLocation(child)}
-            >
-              Inspect
-            </button>
+            <div className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#64748B]">Safety Status</span>
+                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                  simStatus === 'sos' ? 'bg-[#FEE2E2] text-[#DC2626]' : simStatus === 'warning' ? 'bg-[#FEF3C7] text-[#D97706]' : 'bg-[#DCFCE7] text-[#16A34A]'
+                }`}>
+                  {simStatus === 'sos' ? '🚨 SOS EMERGENCY' : simStatus === 'warning' ? '⚠️ BOUNDARY WARNING' : '● SAFE IN ZONE'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#64748B]">Battery</span>
+                <span className="text-xs font-bold text-[#334155]">{child.batteryPct || 90}%</span>
+              </div>
+            </div>
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
-};
+}

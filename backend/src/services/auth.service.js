@@ -58,4 +58,33 @@ const login = async ({ email, password }) => {
   };
 };
 
-module.exports = { signup, login };
+const updateProfile = async (userId, { name, phone, password, contacts, preferences }) => {
+  const db = getDB();
+  const oid = toObjectId(userId);
+  if (!oid) throw new AppError("User not found", 404);
+
+  const updates = { updated_at: new Date() };
+  if (name !== undefined) updates.name = name;
+  if (phone !== undefined) updates.phone = phone;
+  if (contacts !== undefined) updates.contacts = contacts;
+  if (preferences !== undefined) updates.preferences = preferences;
+  if (password) {
+    updates.password = await bcrypt.hash(password, SALT_ROUNDS);
+  }
+
+  await db.collection("users").updateOne({ _id: oid }, { $set: updates });
+
+  const updatedUser = await db.collection("users").findOne({ _id: oid });
+  return {
+    id: updatedUser._id.toString(),
+    email: updatedUser.email,
+    name: updatedUser.name,
+    phone: updatedUser.phone || null,
+    contacts: updatedUser.contacts || [],
+    preferences: updatedUser.preferences || {},
+  };
+};
+
+
+module.exports = { signup, login, updateProfile };
+
